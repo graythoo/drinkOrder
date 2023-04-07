@@ -228,6 +228,7 @@
                 },
                 //產生訂單
                 generateOrder(){
+                    //Date.prototype.toLocaleString() 方法，取得本地的日期與時間
                     var time = new Date().toLocaleString();
                     this.checkOrder.time = time;
                     this.checkOrder.order = this.orderList;
