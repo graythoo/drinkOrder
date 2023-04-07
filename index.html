@@ -256,6 +256,7 @@
                 },
                 countTotal(){
                     var total = 0;
+                    //將每個元素的 total 屬性加總起來，存入變數 total 中。最終得到的 total 就是這個陣列中所有元素的 total 屬性之和
                     this.orderList.forEach((item,key)=>{
                         total = total+item.total;
                     });
