@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>飲料點餐</title>
+    <link rel="stylesheet" href="css/bootstrap.min.css">
+    <link rel="stylesheet" href="css/myall.css">
+</head>
+
+<body>
+    <div class="container my-5" id="app">
+        <div class="row">
+            <div class="col-md-4">
+                <div class="list-group">
+                    <a href="#" class="list-group-item list-group-item-action" :class="{ 'active' : tempSelected.name == item.name }" v-for="(item,key) in product" @click="selectedProduct(item)">
+                        <p>{{ item.name }}</p>
+                        <div class="d-flex justify-content-between">
+                            <p>{{ item.engName }}</p>
+                            <p>NT${{ item.price }}元</p>
+                        </div>
+                    </a>
+                </div>
+            </div>
+            <div class="col-md-8">
+                <div class="card">
+                    <div class="card-body">
+                        <div v-if="!tempSelected.name" class="text-white d-flex align-items-center justify-content-center h2 fw-900" style="position: absolute;top: 0; bottom: 0; left:0;right:0; background-color: rgba(0, 0, 0 ,0.2);z-index: 100;">先選擇飲品</div>
+                        <div class="mb-3"> 
+                            <label for="" class="form-label">數量</label>
+                            <input type="number" min="0" max="20" class="form-control" id="" v-model="tempSelected.count">
+                        </div>
+                        <!-- 縮寫 v-bind-> : ; v-on-> @ -->
+                        <div class="mb-3">
+                            <div>冰塊*</div>
+                            <div class="form-check form-check-inline" v-for="(item,key) in iceType">
+                                <input class="form-check-input" type="radio" name="iceType" id="" :value="item" v-model="tempSelected.ice" :disabled="!tempSelected.hasOwnProperty('defaults') || (tempSelected.defaults.ice !== '' && tempSelected.defaults.ice != item)">
+                                <!-- :disabled-> 前面都為false，後面就要是為true，tempSelected.defaults.ice != item這段意思指!=除了預設以外的其他值;hasOwnProperty 用來判断對象否有自己的某個屬性。這個方法會查找一個對象是否有某個屬性，也就是說有些品項並沒有設定default的值就要disabled掉;左邊這端非執行不可-->
+                                <label class="form-check-label" for="">
+                                    {{ item }}
+                                </label>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <div>甜度*</div>
+                            <div class="form-check form-check-inline" v-for="(item,key) in sugerType">
+                                <input class="form-check-input" type="radio" name="sugarType" id="" :value="item" v-model="tempSelected.suger" :disabled="!tempSelected.hasOwnProperty('defaults') || (tempSelected.defaults.suger !== '' && tempSelected.defaults.suger != item)">
+                                <label class="form-check-label" for="">
+                                    {{ item }}
+                                </label>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <div>加料*</div>
+                            <!-- : = v-on綁定 -->
+                            <!-- includes() 方法用於判斷字符串是否包含指定的子字符串。如果找到匹配的字符串則返回 true，否則返回 false。所以在這邊的用法是相符的話就disabled掉 -->
+                            <div class="form-check form-check-inline" v-for="(item,key) in toppingsType">
+                                <input class="form-check-input" type="checkbox" name="toppingsType" id="" :value="item" :disabled="!tempSelected.hasOwnProperty('defaults') || tempSelected.defaults.toppings.includes(item)" v-model="tempSelected.toppings">
+                                <label class="form-check-label" for="">
+                                    {{ item }}
+                                </label>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="">備註</label>
+                            <textarea name="" id="" cols="30" rows="3" class="form-control" v-model="tempSelected.notice"></textarea>
+                        </div>
+                        <div class="d-flex">
+                            <button class="btn btn-outline-success w-100 me-1">取消</button>
+                            <button class="btn btn-success w-100" @click="addToOrder(tempSelected)">加入</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="card mt-3">
+                    <div class="card-body" v-if="orderList.length > 0">
+                        <table class="table table-secondary table-hover table-striped">
+                            <thead>
+                                <tr>
+                                    <td>品項</td>
+                                    <td>冰塊</td>
+                                    <td>甜度</td>
+                                    <td>加料</td>
+                                    <td>單價</td>
+                                    <td>數量</td>
+                                    <td>小計</td>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr v-for="(item,key) in orderList">
+                                    <td>{{ item.name }}</td>
+                                    <td>{{ item.ice }}</td>
+                                    <td>{{ item.suger }}</td>
+                                    <!-- 把陣列轉成字串 -->
+                                    <td>{{ item.toppings.toString() }}</td>
+                                    <td>{{ item.price }}</td>
+                                    <td>{{ item.count }}</td>
+                                    <td>{{ item.total }}</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                        <button class="btn btn-secondary w-100" @click="generateOrder()">產生訂單</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-md-12">
+                <div class="card mt-3">
+                    <div class="card-body" v-if="checkOrder.time">
+                        <table class="table table-warning table-hover table-striped">
+                            <thead>
+                                <tr>
+                                    <td>品項</td>
+                                    <td>冰塊</td>
+                                    <td>甜度</td>
+                                    <td>加料</td>
+                                    <td>單價</td>
+                                    <td>數量</td>
+                                    <td>小計</td>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr v-for="(item, key) in checkOrder.order">
+                                    <td>{{ item.name }}</td>
+                                    <td>{{ item.ice }}</td>
+                                    <td>{{ item.suger }}</td>
+                                    <!-- 把陣列轉成字串 -->
+                                    <td>{{ item.toppings.toString() }}</td>
+                                    <td>{{ item.price }}</td>
+                                    <td>{{ item.count }}</td>
+                                    <td>{{ item.total }}</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                        <div class="mt-4">
+                           <p>訂單成立時間:{{ checkOrder.time }}</p>
+                           <p>餐點數量:{{ checkOrder.order.length }}</p>
+                           <p>付款狀態:未付款</p>
+                           <p class="text-end">共NT${{ checkOrder.total }}元</p> 
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script src="js/bootstrap.bundle.min.js"></script>
+    <script src="js/vue.global.js"></script>
+    <script>
+        var App = {
+            data(){
+                return{
+                    checkOrder : {
+                        time : '',
+                        total: 0,
+                        order: [],
+                    },
+                    orderList: [], //紀錄還未產生訂單的購物清單
+                    tempSelected:{},
+                    //是跟著上方name的，而不是id
+                    iceType:['正常冰','少冰','微冰','去冰','熱'],
+                    sugerType:['全糖','七分','半糖','三分','無糖'],
+                    toppingsType:['珍珠','粉條','小粉圓','椰果','芋圓'],
+                    product:[
+                        {
+                            name:'珍珠奶茶',
+                            engName:'Pearl milk tea',
+                            price:45,
+                            defaults:{
+                                ice:'少冰',
+                                suger:'三分',
+                                toppings:['珍珠','小粉圓']
+                            }
+                        },
+                        {
+                            name:'白毫烏龍茶',
+                            engName:'Pekoe Oolong Tea',
+                            price:60,
+                            defaults:{
+                                ice:'微冰',
+                                suger:'',
+                                toppings:['']
+                            }
+                        },
+                        {
+                            name:'椰果奶茶',
+                            engName:'Coconut Milk Tea',
+                            price:75,
+                            defaults:{
+                                ice:'',
+                                suger:'半糖',
+                                toppings:['椰果']
+                            }
+                        },
+                        {
+                            name:'青草茶',
+                            engName:'herbal tea',
+                            price:30,
+                            defaults:{
+                                ice:'去冰',
+                                suger:'',
+                                toppings:['']
+                            }
+                        },
+                    ]
+                }
+            },
+            methods:{
+                selectedProduct(product){
+                    this.tempSelected = {
+                        ...product,//...:讓所點選的地方的值不要跟著變，是上面所定義的product產品內容
+                        count:'1',//預設的數量為1
+                        //，格式為 condition ? exprIfTrue : exprIfFalse，意思是當 condition 為真時，回傳 exprIfTrue 的值，否則回傳 exprIfFalse 的值。在這個例子中，如果 product.defaults.ice 不等於空字串或未定義，就回傳 product.defaults.ice 的值，否則回傳 '正常冰'。所以就是前面的condition不為真的話，就要回傳後面的值，相反則反之
+                        ice:product.defaults.ice !== "" ? product.defaults.ice : '正常冰',
+                        suger:product.defaults.suger !== "" ? product.defaults.suger : '全糖',
+                        toppings:[],
+                        notice:'',
+                    }
+                },
+                addToOrder(product) {
+                    this.orderList.push(
+                        {
+                            ...product,//把值傳給他
+                            total: (product.price + product.toppings.length*10) * product.count
+                        }
+                    );
+                },
+                //產生訂單
+                generateOrder(){
+                    var time = new Date().toLocaleString();
+                    this.checkOrder.time = time;
+                    this.checkOrder.order = this.orderList;
+                    this.countTotal();
+                    this.reset();
+                },
+                countTotal(){
+                    var total = 0;
+                    this.orderList.forEach((item,key)=>{
+                        total = total+item.total;
+                    });
+                    this.checkOrder.total = total;
+                },
+                reset(){
+                    this.tempSelected = {};
+                    this.orderList = [];
+                }
+            }
+        }
+
+        Vue.createApp(App).mount("#app");
+    </script>
+</body>
+
+</html>
